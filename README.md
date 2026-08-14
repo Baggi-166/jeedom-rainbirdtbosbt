@@ -58,6 +58,20 @@ l'adresse MAC du programmateur. Au clic sur **Découvrir** :
   et `budget_value` (multiple de 10, 0-200). Le plugin force le multiple de 10 et
   borne la valeur entre 0 et 200.
 
+**Programmes A/B/C** :
+- `program_A_days`, `program_B_days`, `program_C_days` (info string) : jours
+  actifs (ex. `lun,mar,mer,jeu,ven`).
+- `program_A_start`, `program_B_start`, `program_C_start` (info string) : heure
+  de départ (ex. `06:20`).
+- `program_A_durations`, `program_B_durations`, `program_C_durations` (info
+  string) : durées par voie (ex. `1:900,2:900,3:0,4:0,5:1200,6:0`).
+- `set_program_A`, `set_program_B`, `set_program_C` (action) : modifie un
+  programme. Paramètres : `program` (A/B/C), `active_days` (`lun,mar,...`),
+  `start_time` (`HH:MM`), `durations` (`voie:secondes,...`).
+  Les champs non fournis gardent leur valeur actuelle (lue avant écriture).
+  > Note : modifier un programme réécrit les 3 programmes + noms de zone en une
+  > salve (comportement du programmateur observé sur l'app officielle).
+
 ## Rafraîchissement automatique
 
 `cron15()` relit l'état de tous les équipements actifs toutes les 15 minutes

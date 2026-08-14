@@ -255,6 +255,23 @@ class rainbirdtbosbt extends eqLogic {
             $this->checkAndUpdateCmd('budget_month_' . $key, $monthly[$key] ?? 0);
         }
         $this->checkAndUpdateCmd('budget_current_month', $status['water_budget']['current_month_percent'] ?? 0);
+
+        // Programmes A/B/C : jours actifs, heure de départ, durées par voie
+        $programs = $status['programs'] ?? [];
+        foreach (['A', 'B', 'C'] as $prog) {
+            $p = $programs[$prog] ?? [];
+            $days = $p['active_days'] ?? [];
+            $this->checkAndUpdateCmd('program_' . $prog . '_days', implode(',', $days));
+            $starts = $p['start_times'] ?? [];
+            $this->checkAndUpdateCmd('program_' . $prog . '_start', $starts[0] ?? '');
+            $durations = $p['durations_s'] ?? [];
+            $durParts = [];
+            $zoneCount = $this->_getZoneCount();
+            for ($z = 1; $z <= $zoneCount; $z++) {
+                $durParts[] = $z . ':' . ($durations[$z] ?? $durations[(string)$z] ?? 0);
+            }
+            $this->checkAndUpdateCmd('program_' . $prog . '_durations', implode(',', $durParts));
+        }
     }
 
     /**
@@ -320,6 +337,14 @@ class rainbirdtbosbt extends eqLogic {
         }
         $this->_addInfoCmd('budget_current_month', __('Budget mois courant', __FILE__), 'numeric');
         $this->_addActionCmd('set_budget', __('Modifier budget', __FILE__), 'set_budget');
+
+        // --- Programmes A/B/C (lecture + écriture) ---
+        foreach (['A', 'B', 'C'] as $prog) {
+            $this->_addInfoCmd('program_' . $prog . '_days', sprintf(__('Programme %s — jours', __FILE__), $prog), 'string');
+            $this->_addInfoCmd('program_' . $prog . '_start', sprintf(__('Programme %s — heure départ', __FILE__), $prog), 'string');
+            $this->_addInfoCmd('program_' . $prog . '_durations', sprintf(__('Programme %s — durées', __FILE__), $prog), 'string');
+            $this->_addActionCmd('set_program_' . $prog, sprintf(__('Programme %s — modifier', __FILE__), $prog), 'set_program', ['program' => $prog]);
+        }
     }
 
     private function _addInfoCmd(string $logicalId, string $name, string $subType): void {

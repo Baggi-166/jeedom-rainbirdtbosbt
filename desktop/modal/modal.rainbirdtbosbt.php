@@ -22,6 +22,7 @@ sendVarToJS('cmd');
                         <option value="zone_stop">{{Arrêter zone}}</option>
                         <option value="stop_all">{{Arrêt général}}</option>
                         <option value="set_budget">{{Modifier budget eau}}</option>
+                        <option value="set_program">{{Modifier programme}}</option>
                     </select>
                 </div>
                 <div class="col-sm-6">
@@ -76,6 +77,45 @@ sendVarToJS('cmd');
                 </div>
                 <div class="col-sm-6">
                     <span class="help-block">{{Pourcentage du budget eau (multiple de 10, 0-200). Défaut : 100.}}</span>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">{{Programme}}</label>
+                <div class="col-sm-3">
+                    <select class="cmdAttr form-control" data-l1key="configuration" data-l2key="program">
+                        <option value="">{{Aucun}}</option>
+                        <option value="A">{{Programme A}}</option>
+                        <option value="B">{{Programme B}}</option>
+                        <option value="C">{{Programme C}}</option>
+                    </select>
+                </div>
+                <div class="col-sm-6">
+                    <span class="help-block">{{Programme à modifier (pour l'action "Modifier programme").}}</span>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">{{Jours actifs}}</label>
+                <div class="col-sm-3">
+                    <input type="text" class="cmdAttr form-control" data-l1key="configuration" data-l2key="active_days" placeholder="lun,mar,mer,jeu,ven"/>
+                </div>
+                <div class="col-sm-6">
+                    <span class="help-block">{{Jours d'arrosage séparés par virgules (lun,mar,mer,jeu,ven,sam,dim).}}</span>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">{{Heure de départ}}</label>
+                <div class="col-sm-3">
+                    <input type="text" class="cmdAttr form-control" data-l1key="configuration" data-l2key="start_time" placeholder="06:20"/>
+                </div>
+                <div class="col-sm-6">
+                    <span class="help-block">{{Heure de départ du programme (format HH:MM, ex. 06:20).}}</span>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">{{Durées par voie (s)}}</label>
+                <div class="col-sm-9">
+                    <input type="text" class="cmdAttr form-control" data-l1key="configuration" data-l2key="durations" placeholder="1:900,2:900,3:0,4:0,5:1200,6:0"/>
+                    <span class="help-block">{{Durées en secondes par voie (voie:secondes, séparées par virgules). Les voies non mentionnées gardent leur valeur actuelle.}}</span>
                 </div>
             </div>
         <?php } ?>

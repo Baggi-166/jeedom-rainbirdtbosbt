@@ -61,7 +61,11 @@ function addCmdToTable(_cmd) {
     tr += '<input class="cmdAttr form-control input-sm" data-l1key="configuration" data-l2key="zone" placeholder="{{Zone}}" title="{{N° zone 1-6}}" style="width:25%;display:inline-block;"/> ';
     tr += '<input class="cmdAttr form-control input-sm" data-l1key="configuration" data-l2key="duration_s" placeholder="{{Durée s}}" title="{{Durée en secondes}}" style="width:25%;display:inline-block;"/>';
     tr += '<input class="cmdAttr form-control input-sm" data-l1key="configuration" data-l2key="month" placeholder="{{Mois}}" title="{{Mois (01-12)}}" style="width:20%;display:inline-block;"/>';
-    tr += '<input class="cmdAttr form-control input-sm" data-l1key="configuration" data-l2key="budget_value" placeholder="{{Budget %}}" title="{{Budget eau (%)" style="width:20%;display:inline-block;"/>';
+    tr += '<input class="cmdAttr form-control input-sm" data-l1key="configuration" data-l2key="budget_value" placeholder="{{Budget %}}" title="{{Budget eau (%)}}" style="width:20%;display:inline-block;"/>';
+    tr += '<input class="cmdAttr form-control input-sm" data-l1key="configuration" data-l2key="program" placeholder="{{Prog}}" title="{{Programme (A/B/C)}}" style="width:15%;display:inline-block;"/>';
+    tr += '<input class="cmdAttr form-control input-sm" data-l1key="configuration" data-l2key="active_days" placeholder="{{Jours}}" title="{{Jours actifs (lun,mar,...)}}" style="width:25%;display:inline-block;"/>';
+    tr += '<input class="cmdAttr form-control input-sm" data-l1key="configuration" data-l2key="start_time" placeholder="{{HH:MM}}" title="{{Heure de départ}}" style="width:15%;display:inline-block;"/>';
+    tr += '<input class="cmdAttr form-control input-sm" data-l1key="configuration" data-l2key="durations" placeholder="{{1:900,2:600}}" title="{{Durées par voie (voie:secondes)}}" style="width:25%;display:inline-block;"/>';
     tr += '</td>';
     tr += '<td style="min-width:80px;width:350px;">';
     tr += '<label class="checkbox-inline"><input type="checkbox" class="cmdAttr" data-l1key="isVisible" checked/>{{Afficher}}</label>';
