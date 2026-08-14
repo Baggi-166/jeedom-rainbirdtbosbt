@@ -50,6 +50,14 @@ l'adresse MAC du programmateur. Au clic sur **Découvrir** :
 
 **Arrêt général** : `stop_all` (action) — arrête toute irrigation.
 
+**Budget eau mensuel** :
+- `budget_month_01` à `budget_month_12` (info numeric) : pourcentage du budget
+  eau pour chaque mois (0-200%, multiple de 10). Mis à jour à chaque rafraîchissement.
+- `budget_current_month` (info numeric) : pourcentage du budget du mois courant.
+- `set_budget` (action) : modifie le budget d'un mois. Paramètres : `month` (01-12)
+  et `budget_value` (multiple de 10, 0-200). Le plugin force le multiple de 10 et
+  borne la valeur entre 0 et 200.
+
 ## Rafraîchissement automatique
 
 `cron15()` relit l'état de tous les équipements actifs toutes les 15 minutes

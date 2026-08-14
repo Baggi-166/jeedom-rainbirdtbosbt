@@ -21,9 +21,10 @@ require_once dirname(__FILE__) . '/../../../core/php/core.inc.php';
  * Commande Jeedom pour le plugin Rain Bird TBOS-BT.
  *
  * Le type d'action est stocké dans la configuration 'action_type'
- * (zone_start, zone_stop, stop_all). La zone concernée est dans la
+ * (zone_start, zone_stop, stop_all, set_budget). La zone concernée est dans la
  * configuration 'zone'. La durée (en secondes) pour zone_start est dans
  * la configuration 'duration_s' (défaut 60).
+ * Pour set_budget : 'month' (01-12) et 'budget_value' (multiple de 10, 0-200).
  */
 class rainbirdtbosbtCmd extends cmd {
 
@@ -57,6 +58,19 @@ class rainbirdtbosbtCmd extends cmd {
 
             case 'stop_all':
                 $command['stop_all'] = true;
+                break;
+
+            case 'set_budget':
+                $month = $this->getConfiguration('month', '');
+                $value = (int) $this->getConfiguration('budget_value', 100);
+                if ($month === '' || !preg_match('/^(0[1-9]|1[0-2])$/', $month)) {
+                    log::add('rainbirdtbosbt', 'error', 'set_budget : mois invalide (01-12 attendu) : ' . $month);
+                    return null;
+                }
+                // Le programmateur n'accepte que des multiples de 10% (0-200).
+                $value = max(0, min(200, $value));
+                $value = (int) round($value / 10) * 10;
+                $command['water_budget'] = array('monthly' => array($month => $value));
                 break;
 
             default:

@@ -21,6 +21,7 @@ sendVarToJS('cmd');
                         <option value="zone_start">{{Démarrer zone}}</option>
                         <option value="zone_stop">{{Arrêter zone}}</option>
                         <option value="stop_all">{{Arrêt général}}</option>
+                        <option value="set_budget">{{Modifier budget eau}}</option>
                     </select>
                 </div>
                 <div class="col-sm-6">
@@ -43,6 +44,38 @@ sendVarToJS('cmd');
                 </div>
                 <div class="col-sm-6">
                     <span class="help-block">{{Durée d'arrosage en secondes (défaut : 60).}}</span>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">{{Mois (budget eau)}}</label>
+                <div class="col-sm-3">
+                    <select class="cmdAttr form-control" data-l1key="configuration" data-l2key="month">
+                        <option value="">{{Aucun}}</option>
+                        <option value="01">{{Janvier}}</option>
+                        <option value="02">{{Février}}</option>
+                        <option value="03">{{Mars}}</option>
+                        <option value="04">{{Avril}}</option>
+                        <option value="05">{{Mai}}</option>
+                        <option value="06">{{Juin}}</option>
+                        <option value="07">{{Juillet}}</option>
+                        <option value="08">{{Août}}</option>
+                        <option value="09">{{Septembre}}</option>
+                        <option value="10">{{Octobre}}</option>
+                        <option value="11">{{Novembre}}</option>
+                        <option value="12">{{Décembre}}</option>
+                    </select>
+                </div>
+                <div class="col-sm-6">
+                    <span class="help-block">{{Mois concerné par la modification du budget eau (pour l'action "Modifier budget eau").}}</span>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">{{Valeur budget (%)}}</label>
+                <div class="col-sm-3">
+                    <input type="number" min="0" max="200" step="10" class="cmdAttr form-control" data-l1key="configuration" data-l2key="budget_value" placeholder="100"/>
+                </div>
+                <div class="col-sm-6">
+                    <span class="help-block">{{Pourcentage du budget eau (multiple de 10, 0-200). Défaut : 100.}}</span>
                 </div>
             </div>
         <?php } ?>

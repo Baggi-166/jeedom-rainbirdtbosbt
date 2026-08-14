@@ -247,6 +247,14 @@ class rainbirdtbosbt extends eqLogic {
         for ($i = 1; $i <= $zoneCount; $i++) {
             $this->checkAndUpdateCmd('zone_state_' . $i, ($activeZone === $i) ? 1 : 0);
         }
+
+        // Budget eau mensuel : 12 valeurs (01-12) + mois courant
+        $monthly = $status['water_budget']['monthly'] ?? [];
+        for ($m = 1; $m <= 12; $m++) {
+            $key = sprintf('%02d', $m);
+            $this->checkAndUpdateCmd('budget_month_' . $key, $monthly[$key] ?? 0);
+        }
+        $this->checkAndUpdateCmd('budget_current_month', $status['water_budget']['current_month_percent'] ?? 0);
     }
 
     /**
@@ -299,6 +307,19 @@ class rainbirdtbosbt extends eqLogic {
 
         // --- Arrêt général ---
         $this->_addActionCmd('stop_all', __('Arrêt général', __FILE__), 'stop_all');
+
+        // --- Budget eau mensuel ---
+        $months = [
+            '01' => 'Janvier', '02' => 'Février', '03' => 'Mars',
+            '04' => 'Avril', '05' => 'Mai', '06' => 'Juin',
+            '07' => 'Juillet', '08' => 'Août', '09' => 'Septembre',
+            '10' => 'Octobre', '11' => 'Novembre', '12' => 'Décembre',
+        ];
+        foreach ($months as $num => $label) {
+            $this->_addInfoCmd('budget_month_' . $num, sprintf('Budget %s', $label), 'numeric');
+        }
+        $this->_addInfoCmd('budget_current_month', __('Budget mois courant', __FILE__), 'numeric');
+        $this->_addActionCmd('set_budget', __('Modifier budget', __FILE__), 'set_budget');
     }
 
     private function _addInfoCmd(string $logicalId, string $name, string $subType): void {
