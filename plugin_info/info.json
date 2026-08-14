@@ -1,0 +1,16 @@
+{
+  "id": "rainbirdtbosbt",
+  "name": "Rain Bird TBOS-BT",
+  "description": "Pilotage en Bluetooth Low Energy d'un programmateur d'arrosage Rain Bird TBOS-BT (6 zones).",
+  "licence": "AGPL",
+  "author": "Baggi-166",
+  "require": "4.4",
+  "category": "automatisme",
+  "hasDependency": 1,
+  "hasOwnDeamon": 0,
+  "maxDependancyInstallTime": 30,
+  "changelog": "",
+  "documentation": "",
+  "language": ["fr_FR"],
+  "compatibility": ["miniplus", "smart", "rpi", "docker", "v4"]
+}
