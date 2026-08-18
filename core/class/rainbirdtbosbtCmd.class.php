@@ -27,7 +27,9 @@ require_once dirname(__FILE__) . '/../../../core/php/core.inc.php';
  * 'duration_s' (défaut 60).
  * Pour set_budget : 'month' (01-12) et 'budget_value' (multiple de 10, 0-200).
  * Pour set_program : 'program' (A/B/C), 'active_days' (lun,mar,...),
- * 'start_time' (HH:MM), 'durations' (voie:secondes,voie:secondes,...).
+ * 'start_time' (HH:MM), 'durations' (voie:secondes,voie:secondes,...),
+ * 'program_budget' (0-255, budget propre au programme, sans contrainte
+ * multiple-de-10 contrairement au budget mensuel global).
  */
 class rainbirdtbosbtCmd extends cmd {
 
@@ -140,6 +142,23 @@ class rainbirdtbosbtCmd extends cmd {
                     if (!empty($durations)) {
                         $progConfig['durations_s'] = $durations;
                     }
+                }
+
+                // Budget propre à ce programme (distinct du budget mensuel global) :
+                // pas de contrainte multiple-de-10 ici, contrairement à set_budget --
+                // CONFIRMÉ par capture réelle (ex. 127% observé). Voir PROTOCOL.md.
+                $rawProgBudget = trim($this->getConfiguration('program_budget', ''));
+                if ($rawProgBudget !== '') {
+                    $progBudget = (int) $rawProgBudget;
+                    if ($progBudget < 0 || $progBudget > 255) {
+                        log::add('rainbirdtbosbt', 'error', sprintf(
+                            'set_program : budget programme hors plage (0-255 attendu) pour %s : %d',
+                            $program,
+                            $progBudget
+                        ));
+                        return null;
+                    }
+                    $progConfig['budget_percent'] = $progBudget;
                 }
 
                 if (empty($progConfig)) {

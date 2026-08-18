@@ -118,6 +118,15 @@ sendVarToJS('cmd');
                     <span class="help-block">{{Durées en secondes par voie (voie:secondes, séparées par virgules). Les voies non mentionnées gardent leur valeur actuelle.}}</span>
                 </div>
             </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">{{Budget du programme (%)}}</label>
+                <div class="col-sm-3">
+                    <input type="number" min="0" max="255" class="cmdAttr form-control" data-l1key="configuration" data-l2key="program_budget" placeholder="100"/>
+                </div>
+                <div class="col-sm-6">
+                    <span class="help-block">{{Budget eau propre à ce programme (0-255), distinct du budget mensuel global. Pas de contrainte multiple de 10 ici. Laisser vide pour ne pas y toucher.}}</span>
+                </div>
+            </div>
         <?php } ?>
     </fieldset>
 </form>
