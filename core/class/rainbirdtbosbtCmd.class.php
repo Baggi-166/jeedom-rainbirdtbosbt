@@ -75,6 +75,14 @@ class rainbirdtbosbtCmd extends cmd {
                 $command['stop_all'] = true;
                 break;
 
+            case 'power_on':
+                $command['power'] = 'on';
+                break;
+
+            case 'power_off':
+                $command['power'] = 'off';
+                break;
+
             case 'set_budget':
                 $month = $this->getConfiguration('month', '');
                 $value = (int) $this->getConfiguration('budget_value', 100);
