@@ -3,3 +3,5 @@ __pycache__/
 *.pyo
 rainbird_debug.log
 tmep
+# Venv Python dédié au plugin (créé par resources/install_apt.sh, jamais commité)
+resources/venv/
