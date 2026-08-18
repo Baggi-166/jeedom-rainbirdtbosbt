@@ -212,7 +212,7 @@ class rainbirdtbosbt extends eqLogic {
     }
 
     /**
-     * Appelle `main.py status` et retourne le tableau décodé du JSON d'état.
+     * Appelle `main.py status` et retorne le tableau décodé du JSON d'état.
      */
     public function fetchStatus(): array {
         $cmd = $this->_buildPythonCmd(['--address', $this->getMac(), 'status']);
@@ -322,8 +322,13 @@ class rainbirdtbosbt extends eqLogic {
             $this->_addActionCmd('zone_stop_' . $i, sprintf('%s — %s', $name, __('Arrêt', __FILE__)), 'zone_stop', ['zone' => $i]);
         }
 
-        // --- Arrêt général ---
-        $this->_addActionCmd('stop_all', __('Arrêt général', __FILE__), 'stop_all');
+        // --- ON / OFF général (active/désactive les programmes automatiques,
+        //     distinct de l'arrêt général qui ne coupe qu'une irrigation en cours) ---
+        $this->_addActionCmd('power_on', __('Activer (Auto)', __FILE__), 'power_on');
+        $this->_addActionCmd('power_off', __('Désactiver', __FILE__), 'power_off');
+
+        // --- Arrêt général (coupe l'irrigation en cours, sans désactiver l'auto) ---
+        $this->_addActionCmd('stop_all', __('Arrêt en cours', __FILE__), 'stop_all');
 
         // --- Budget eau mensuel ---
         $months = [
