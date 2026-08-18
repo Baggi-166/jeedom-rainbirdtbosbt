@@ -5,10 +5,14 @@ if (!isConnect('admin')) {
     throw new Exception('{{401 - Accès non autorisé}}');
 }
 
-// Valeurs par défaut : python3 et scripts à côté du plugin.
-$pythonPath = config::byKey('python_path', 'rainbirdtbosbt', 'python3');
+// Valeurs par défaut : venv dédié au plugin si présent, sinon python3 système.
+$venvPython = dirname(__DIR__) . '/resources/venv/bin/python3';
+$defaultPython = is_executable($venvPython) ? $venvPython : 'python3';
+$pythonPath = config::byKey('python_path', 'rainbirdtbosbt', $defaultPython);
 $scriptsDir = config::byKey('scripts_dir', 'rainbirdtbosbt', dirname(__DIR__) . '/scripts');
 $adapter = config::byKey('adapter', 'rainbirdtbosbt', '');
+$refreshStrategy = config::byKey('refresh_strategy', 'rainbirdtbosbt', 'on_demand');
+$refreshAfterAction = config::byKey('refresh_after_action', 'rainbirdtbosbt', 0);
 
 // Scan des interfaces Bluetooth disponibles (hci0, hci1, ...).
 $adapters = array();
@@ -28,6 +32,13 @@ if (empty($adapters) && is_dir('/sys/class/bluetooth')) {
         }
     }
 }
+
+$strategies = [
+    'on_demand'      => '{{À la demande (aucun refresh auto)}}',
+    'during_program' => '{{Pendant un programme en cours}}',
+    'daily_05h'      => '{{Journalier vers 05h00}}',
+    'every_15min'    => '{{Toutes les 15 min (historique)}}',
+];
 ?>
 <form class="form-horizontal">
     <fieldset>
@@ -38,7 +49,7 @@ if (empty($adapters) && is_dir('/sys/class/bluetooth')) {
                 <input type="text" class="configKey form-control" data-l1key="python_path" value="<?php echo $pythonPath; ?>" placeholder="python3"/>
             </div>
             <div class="col-sm-5">
-                <span class="help-block">{{Chemin de l'exécutable Python (python3 par défaut).}}</span>
+                <span class="help-block">{{Chemin de l'exécutable Python. Par défaut : le venv dédié du plugin (resources/venv/bin/python3) s'il a été créé par l'installation des dépendances, sinon python3 du système.}}</span>
             </div>
         </div>
         <div class="form-group">
@@ -66,6 +77,32 @@ if (empty($adapters) && is_dir('/sys/class/bluetooth')) {
             </div>
             <div class="col-sm-5">
                 <span class="help-block">{{Carte Bluetooth à utiliser pour communiquer avec le programmateur.}}</span>
+            </div>
+        </div>
+    </fieldset>
+
+    <fieldset>
+        <legend><i class="fas fa-sync"></i> {{Rafraîchissement (préserve la pile)}}</legend>
+        <div class="form-group">
+            <label class="col-sm-3 control-label">{{Stratégie de refresh}}</label>
+            <div class="col-sm-4">
+                <select class="configKey form-control" data-l1key="refresh_strategy">
+                    <?php foreach ($strategies as $value => $label) { ?>
+                        <option value="<?php echo $value; ?>" <?php echo ($refreshStrategy === $value) ? 'selected' : ''; ?>><?php echo $label; ?></option>
+                    <?php } ?>
+                </select>
+            </div>
+            <div class="col-sm-5">
+                <span class="help-block">{{Fréquence de relire de l'état du programmateur via cron15. Le TBOS-BT est alimenté par pile : privilégier une stratégie peu fréquente. Défaut : à la demande.}}</span>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="col-sm-3 control-label">{{Refresh après chaque action}}</label>
+            <div class="col-sm-4">
+                <input type="checkbox" class="configKey" data-l1key="refresh_after_action" <?php echo $refreshAfterAction ? 'checked' : ''; ?>/>
+            </div>
+            <div class="col-sm-5">
+                <span class="help-block">{{Mode debug : relit l'état complet juste après chaque commande (déclenche une seconde connexion BLE). Désactivé par défaut pour limiter l'usure de la pile.}}</span>
             </div>
         </div>
     </fieldset>

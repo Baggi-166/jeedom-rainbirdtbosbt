@@ -21,9 +21,10 @@ require_once dirname(__FILE__) . '/../../../core/php/core.inc.php';
  * Commande Jeedom pour le plugin Rain Bird TBOS-BT.
  *
  * Le type d'action est stocké dans la configuration 'action_type'
- * (zone_start, zone_stop, stop_all, set_budget, set_program). La zone concernée est dans la
- * configuration 'zone'. La durée (en secondes) pour zone_start est dans
- * la configuration 'duration_s' (défaut 60).
+ * (zone_start, zone_stop, power_on, power_off, stop_all, set_budget,
+ * set_program). La zone concernée est dans la configuration 'zone'.
+ * La durée (en secondes) pour zone_start est dans la configuration
+ * 'duration_s' (défaut 60).
  * Pour set_budget : 'month' (01-12) et 'budget_value' (multiple de 10, 0-200).
  * Pour set_program : 'program' (A/B/C), 'active_days' (lun,mar,...),
  * 'start_time' (HH:MM), 'durations' (voie:secondes,voie:secondes,...).
@@ -56,6 +57,18 @@ class rainbirdtbosbtCmd extends cmd {
                     'index' => $zone,
                     'action' => 'stop',
                 ));
+                break;
+
+            case 'power_on':
+                // power:on active l'automatisme (état 0x40 = On/Auto).
+                // Distinct de stop_all : OFF (power:off, état 0x00) désactive
+                // l'automatisme lui-même, STOP (stop_all) ne coupe que
+                // l'irrigation en cours. Voir PROTOCOL.md.
+                $command['power'] = 'on';
+                break;
+
+            case 'power_off':
+                $command['power'] = 'off';
                 break;
 
             case 'stop_all':
