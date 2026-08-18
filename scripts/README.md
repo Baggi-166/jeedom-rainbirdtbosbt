@@ -19,9 +19,15 @@ rainbird_tbos/
 │   └── ble_client.py  # connexion BLE (bleak), une connexion courte par action
 ├── commands.py        # get_status(), apply_command()
 ├── main.py            # CLI
+├── run_tonight_tests.py  # plan de tests interactif sur matériel réel (voir en bas de ce fichier)
+├── PROTOCOL.md         # référence complète du protocole BLE décodé
 └── tests/
     └── test_protocol.py  # rejoue des trames réellement capturées, sans matériel
 ```
+
+Le détail complet du protocole (toutes les trames confirmées, non confirmées, et les points
+encore ouverts) est dans **`PROTOCOL.md`** — à consulter avant toute modification de
+`core/protocol.py`.
 
 ## Utilisation
 

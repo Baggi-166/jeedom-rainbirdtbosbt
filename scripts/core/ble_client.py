@@ -54,7 +54,7 @@ async def run_session(
     timeout: float = 15.0,
     retries: int = 2,
     adapter: Optional[str] = None,
-    sync_clock: bool = True,
+    sync_clock: bool = False,
 ) -> bool:
     """
     Connexion unique : abonnement notifications, envoi séquentiel des trames
@@ -64,8 +64,12 @@ async def run_session(
     on_notify(data: bytes) est appelé pour chaque notification reçue.
     adapter : nom de l'interface BLE à utiliser (ex. 'hci0', 'hci1'),
     uniquement pertinent sous Linux/BlueZ ; ignoré ailleurs.
-    sync_clock : si True (défaut), envoie la trame de synchronisation
+    sync_clock : si True, envoie la trame de synchronisation
     horloge en tout premier, comme le fait l'app officielle à la connexion.
+    Désactivé par défaut (False) : la fenêtre de connexion étant très courte
+    et imprévisible (voir PROTOCOL.md, "Stabilité de connexion"), on préfère
+    garder ce temps pour la commande réellement utile plutôt que pour un
+    geste de courtoisie non indispensable au fonctionnement des commandes.
     Retourne True si la session s'est déroulée sans erreur BLE.
     """
     writes = list(writes)

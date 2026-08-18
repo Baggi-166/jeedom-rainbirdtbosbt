@@ -49,7 +49,7 @@ Séquence typique observée à la connexion :
 2. `19-00-00-19-00` → réponse `1a-03-02-88-ee` (requête générique, fonction exacte inconnue)
 3. `13-00` → déclenche le trio de notifications d'état (voir plus bas)
 4. `03-06-00-7e-MM-DD-hh-mm-ss` → synchronisation de l'horloge du programmateur sur celle du téléphone (CONFIRMÉ, voir plus bas)
-5. `17-00`, `11-00`, `0d-00` → autres lectures observées, contenu de leur réponse non identifié avec certitude
+5. `17-00`, `11-00`, `0d-00` → toutes identifiées le 14/08 par isolement (une requête à la fois, connexion dédiée). Voir table ci-dessous.
 
 ## Format des trames
 
@@ -69,9 +69,9 @@ trame doit se faire sur `byte1` (et souvent `byte2`), jamais sur `byte0`.**
 |---|---|---|
 | `13-00` | Trio d'état : `xx-10-02-...`, `xx-10-01-...`, `xx-05-00-01-...` | CONFIRMÉ |
 | `19-00-00-19-00` | `1a-03-02-88-ee` (fixe) | CONFIRMÉ (envoi + réponse), fonction inconnue |
-| `17-00` | non identifiée | envoi confirmé, réponse non décodée |
-| `11-00` | non identifiée | envoi confirmé, réponse non décodée |
-| `0d-00` | non identifiée | envoi confirmé, réponse non décodée |
+| `17-00` | Budget mensuel (2 trames, même contenu que via `13-00`/spontané mais tag `18` au lieu de `16`), une trame contenant l'adresse MAC, une trame vide | CONFIRMÉ (isolé le 14/08) |
+| `11-00` | Dump complet des 3 programmes A/B/C (jours, heures de départ, durées — mêmes trames que le dump spontané, tag `12` inchangé) | CONFIRMÉ (isolé le 14/08) |
+| `0d-00` | Dump des 6 noms de zone (tag `0E` au lieu de `0C` du dump spontané, contenu identique) | CONFIRMÉ (isolé le 14/08) |
 
 ## Commandes d'action
 
@@ -107,12 +107,16 @@ lecture et en écriture** (contrairement aux tags d'enregistrement eux-mêmes, v
 
 **En-tête** (jours, activation, date) :
 ```
-Lecture : 12-0E-xx-PP-00-00-00-64-00-<jours>-<actif>-00-<JJ>-<MM>-<AAAA_hi>-<AAAA_lo>
-Écriture: 0F-0E-00-PP-00-00-00-64-00-<jours>-<actif>-00-<JJ>-<MM>-<AAAA_hi>-<AAAA_lo>
+Lecture : 12-0E-xx-PP-00-00-00-<budget>-00-<jours>-<actif>-00-<JJ>-<MM>-<AAAA_hi>-<AAAA_lo>
+Écriture: 0F-0E-00-PP-00-00-00-<budget>-00-<jours>-<actif>-00-<JJ>-<MM>-<AAAA_hi>-<AAAA_lo>
 ```
-- `<jours>` : masque 1 octet, bit0=lundi ... bit6=dimanche (CONFIRMÉ : 0x1F=lun-ven, 0x60=sam-dim, 0x1E=mar-ven après suppression du lundi — 3 recoupements indépendants)
+- `<jours>` : masque 1 octet, bit0=lundi ... bit6=dimanche (CONFIRMÉ : 0x1F=lun-ven, 0x60=sam-dim, 0x1E=mar-ven après suppression du lundi, 0x7F=tous les jours — 4 recoupements indépendants)
 - `<actif>` : `0x01` = programme activé
-- Le `0x64` fixe après les 3 premiers octets n'est PAS le budget eau (voir plus bas) — rôle exact inconnu, toujours vu à 100 quel que soit le budget réel
+- `<budget>` : **budget eau PAR PROGRAMME, CONFIRMÉ le 15/08** par capture réelle via l'app
+  officielle — 1 octet, pourcentage brut (pas de contrainte multiple-de-10 contrairement au
+  budget mensuel global). Recoupé sur 3 programmes en une seule session : A=`0x32`(50%),
+  B=`0x50`(80%), C=`0x64`(100%). Longtemps pris à tort pour un octet fixe (toujours vu à
+  100% par défaut dans les captures précédentes, d'où la confusion initiale).
 - Date : jour/mois/année, probablement un horodatage de fraîcheur plutôt qu'une donnée de programme
 
 **Heures de départ** (jusqu'à 8 créneaux/jour) :
@@ -186,6 +190,12 @@ après une action — préfixe `byte1-byte2 = 10-02` :
 | `0x42` | Manuel actif (une seule zone lancée manuellement) | CONFIRMÉ |
 | `0x44` | Programme actif | CONFIRMÉ (13/08, lancement réel de B et C) — nouveau, non documenté avant cette session |
 
+## Comportement zones simultanées
+
+**CONFIRMÉ (14/08)** : lancer une deuxième zone manuellement pendant qu'une première est
+déjà active **remplace** la première — les deux ne coulent jamais en parallèle, même via
+deux connexions séparées. Vérifié par observation physique directe.
+
 ## Trame "zone_type" (non décodée en détail)
 
 Préfixe `byte1-byte2 = 10-01`, 18 octets, accompagne systématiquement la trame d'état.
@@ -207,24 +217,21 @@ type/à la config de chaque station). Non bloquant pour le pilotage.
   disponible à ce jour, insuffisant pour conclure).
 - **Rôle exact du `0x01` flag et des octets `4D-xx-10` en fin de trame d'état** : ce
   dernier ressemble à un compteur lent (tick), sans lien apparent avec un CRC.
-- **Réponses aux requêtes `17-00`, `11-00`, `0d-00`** : envoi confirmé, contenu de la
-  réponse jamais isolé avec certitude parmi les autres notifications reçues au même moment.
 - **STOP (`09-05-15-...`) arrête-t-il une zone précise ou tout ?** : le format ne contient
   pas de champ zone visible (`ff` fixe) — comportement observé cohérent avec "arrête tout",
   jamais testé avec 2 zones actives en parallèle avant l'ajout du test dédié (7a/7b/7c).
-- **Ajustement saisonnier PAR PROGRAMME** (distinct du budget mensuel global) : le manuel
-  utilisateur officiel mentionne un réglage "0 à 300%" à la fois par programme et global
-  mensuel — seul le mensuel global a été localisé dans le protocole à ce jour.
 - **Rain Delay** (report de pluie 1-14 jours, mentionné au manuel) : jamais capturé, aucune
   piste protocole.
 - **Batterie et qualité de connexion** : l'app officielle affiche les deux, jamais décodés
-  avec certitude côté protocole. Une trame candidate a été repérée tôt dans l'investigation
-  — `04-06-00-7E-08-0B-16-16-2D` (notification) / `03-06-00-7E-...` (écriture, à ne pas
-  confondre avec la sync horloge qui partage le même préfixe `03-06-00-7E` mais une longueur
-  différente) — sans qu'aucun octet ne corresponde clairement à un pourcentage batterie
-  (60-70% annoncé par l'app à ce moment) ni à un niveau de signal (1 barre/4). Nécessite une
-  capture dédiée avec contraste net (proche/loin du device, ou avant/après décharge de la
-  pile) pour isoler quel(s) octet(s) bouge(nt).
+  avec certitude côté protocole. **La trame candidate `04-06-00-7E-...` initialement
+  suspectée est en réalité l'écho de la synchronisation horloge** (confirmé le 14/08 :
+  chaque écriture `03-06-00-7E-MM-DD-hh-mm-ss` est immédiatement suivie d'une notification
+  `04-06-00-7E-MM-DD-hh-mm-ss` avec le même payload) — donc pas une piste batterie/signal.
+  **Test RSSI fait le 14/08** via `bleak` (mesure indépendante du protocole) : -78 dBm
+  proche vs -89 dBm loin (cohérent), mais l'app affichait "1/4" barre dans les deux cas et
+  aucun octet des trames reçues ne corrèle avec cet écart — inconclusif, contraste
+  peut-être insuffisant ou indicateur app trop grossier pour cette comparaison. Batterie :
+  toujours aucune piste, nécessite un contraste sur plusieurs semaines (décharge réelle).
 - **Modèle et version firmware** : jamais capturés. Aucune requête identifiée comme
   "ModelAndVersion" (contrairement au protocole SIP d'autres contrôleurs Rain Bird, qui a
   une commande dédiée `0x02`/`0x82` pour ça — rien d'équivalent trouvé ici à ce jour).
@@ -232,6 +239,21 @@ type/à la config de chaque station). Non bloquant pour le pilotage.
   ≥4 caractères) sur les 5 pcap disponibles : aucune occurrence du modèle ni du nombre de
   voies, contrairement au nom du site et aux noms de zone qui eux sont bien en clair. Piste
   à considérer comme épuisée sauf découverte d'un nouvel opcode de requête dédié.
+  Version de l'app officielle notée pour référence : 5.2.41 (côté app, pas forcément
+  présente dans les trames émises par le device lui-même).
+- **Stabilité de connexion** : déconnexions fréquentes ("Not connected") observées les
+  14 et 15/08. Hypothèse initiale (rafale de notifications) **infirmée le 15/08** :
+  augmenter le délai entre écritures à 1s a fait échouer la connexion encore plus tôt
+  (dès la 2e écriture), pas plus tard. Le délai entre connexion et coupure semble
+  constant (~1 à 2s après le `connect()`) indépendamment de ce qui est envoyé — ça
+  ressemble à une coupure qui survient d'elle-même plutôt qu'à une conséquence de nos
+  écritures. Pistes non protocolaires à explorer : stack Bluetooth Windows/WinRT qui
+  coupe avant la fin de la renégociation des paramètres de connexion (observée dans les
+  tout premiers logs nRF : l'app renégocie l'intervalle quelques secondes après connexion),
+  ou interférence RF (Wi-Fi 2.4GHz, distance, obstacle) ce soir-là. Délai entre écritures
+  ramené à 0.2s (revert), et la synchronisation horloge automatique désactivée par défaut
+  dans `ble_client.run_session()` pour laisser plus de marge à la commande utile dans la
+  fenêtre de connexion, très courte et imprévisible.
 
 ## Journal des captures ayant servi à ce document
 
@@ -241,3 +263,5 @@ type/à la config de chaque station). Non bloquant pour le pilotage.
 | 11/08/2026 | Programmes A/B (jours, heures, durées), noms de zone, dates |
 | 12/08/2026 (soir) | Écritures : lancement zone, stop, ON/OFF, lancement programme A, sync horloge, réécriture programme (suppression lundi), budget global (140→100%) |
 | 13/08/2026 | Lancement programme B et C confirmés en conditions réelles (état `0x44` découvert), écriture budget mensuel confirmée avec 12 nouvelles valeurs réelles |
+| 14/08/2026 | `17-00`/`11-00`/`0d-00` isolées et identifiées, comportement zones simultanées confirmé (remplacement, pas parallèle), écho horloge clarifié (pas batterie/signal), RSSI mesuré (inconclusif), piste budget par programme identifiée, instabilité de connexion diagnostiquée |
+| 15/08/2026 | Budget eau PAR PROGRAMME confirmé (A=50%, B=80%, C=100%, recoupé exactement) ; découverte critique et corrigée : une écriture avec lecture préalable incomplète (connexion coupée en cours de route) peut écraser un programme avec des valeurs vides — garde-fou ajouté ; hypothèse "délai plus long = plus stable" infirmée par les données réelles ; app officielle 100% fiable sur la même session où notre script échouait, pointant vers un problème côté stack BLE Windows plutôt que protocole |

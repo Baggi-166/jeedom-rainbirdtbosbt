@@ -56,7 +56,7 @@ async def get_status(
             d = P.decode_program_header(data)
             programs.setdefault(d["program"], {})
             programs[d["program"]].update(
-                {"active_days": d["active_days"], "enabled": d["enabled"]}
+                {"active_days": d["active_days"], "enabled": d["enabled"], "budget_percent": d["budget_percent"]}
             )
 
         elif kind == "program_starts":
@@ -223,6 +223,32 @@ async def _apply_program_changes(
     """
     current = await get_status(address, timeout=timeout, adapter=adapter)
 
+    # Garde-fou CRITIQUE : si la lecture de l'état courant a été interrompue (connexion
+    # coupée en cours de dump), certains champs de programme peuvent être manquants plutôt
+    # que réellement vides. Écrire ces "trous" comme s'ils étaient l'état réel écraserait
+    # la config actuelle avec des zéros. On vérifie que chaque programme a bien les 3 clés
+    # attendues -- si ce n'est pas le cas, on retente UNE fois une lecture propre avant
+    # d'abandonner sans rien écrire.
+    required_keys = {"active_days", "start_times", "durations_s", "budget_percent"}
+
+    def _missing_fields(status: Dict[str, Any]) -> Dict[str, list]:
+        return {
+            letter: sorted(required_keys - set(status["programs"].get(letter, {}).keys()))
+            for letter in ("A", "B", "C")
+            if required_keys - set(status["programs"].get(letter, {}).keys())
+        }
+
+    missing = _missing_fields(current)
+    if missing:
+        current = await get_status(address, timeout=timeout, adapter=adapter)
+        missing = _missing_fields(current)
+    if missing:
+        raise ValueError(
+            f"Lecture incomplète après 2 tentatives (champs manquants : {missing}) "
+            f"— écriture ANNULÉE pour éviter d'écraser la config actuelle avec des valeurs "
+            f"vides. Probablement une connexion instable. Réessayez plus tard."
+        )
+
     writes: List[bytes] = []
     for letter in ("A", "B", "C"):
         prog = dict(current["programs"].get(letter, {}))
@@ -232,8 +258,9 @@ async def _apply_program_changes(
         start_min = _first_start_to_minutes(prog.get("start_times", []))
         durations = prog.get("durations_s", {})
         durations_list = [int(durations.get(str(i), 0)) for i in range(1, C.ZONE_COUNT + 1)]
+        budget_percent = int(prog.get("budget_percent", 100))
 
-        writes.extend(P.build_program_records(letter, day_mask, start_min, durations_list))
+        writes.extend(P.build_program_records(letter, day_mask, start_min, durations_list, budget_percent))
 
     for i, name in enumerate(C.DEFAULT_ZONE_NAMES):
         zone = current["zones"].get(i + 1, {})

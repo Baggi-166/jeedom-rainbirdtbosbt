@@ -66,12 +66,15 @@ def build_power(on: bool) -> bytes:
     return C.CMD_ON if on else C.CMD_OFF
 
 
-def build_program_records(program: str, day_mask: int, start_min: int, durations_s):
+def build_program_records(program: str, day_mask: int, start_min: int, durations_s, budget_percent: int = 100):
     """
     Construit les 4 trames d'écriture d'un programme (A/B/C) :
-    en-tête (jours/activation/date), heures de départ, durées (2 trames).
+    en-tête (jours/activation/date/budget), heures de départ, durées (2 trames).
 
     durations_s : liste de 6 durées en secondes (station 1 à 6).
+    budget_percent : budget eau PROPRE à ce programme, 0-255, défaut 100
+    (CONFIRMÉ le 15/08 : ce champ varie réellement, ex. 50%, 80%, 127% observés
+    sur du matériel réel — ce n'est pas un octet fixe comme on l'a cru longtemps).
     """
     program = program.upper()
     if program not in C.PROGRAM_READ_TAG:
@@ -80,13 +83,15 @@ def build_program_records(program: str, day_mask: int, start_min: int, durations
 
     if len(durations_s) != C.ZONE_COUNT:
         raise ValueError(f"durations_s doit contenir {C.ZONE_COUNT} valeurs")
+    if not (0 <= budget_percent <= 255):
+        raise ValueError("budget_percent doit être entre 0 et 255")
 
     today = datetime.now()
     date_bytes = bytes([today.day, today.month]) + today.year.to_bytes(2, "big")
 
     rec_header = (
         bytes([0x0F, 0x0E, 0x00, pp])
-        + bytes([0, 0, 0, 0x64, 0])  # champ fixe (0x64) de rôle encore inconnu
+        + bytes([0, 0, 0, budget_percent, 0])
         + bytes([day_mask & 0x7F, 0x01, 0])
         + date_bytes
     )
@@ -191,8 +196,9 @@ def decode_state(data: bytes) -> dict:
 
 
 def decode_program_header(data: bytes) -> dict:
-    """classify()=='program_header'. Jours de la semaine + activation + date."""
+    """classify()=='program_header'. Jours de la semaine + activation + date + budget."""
     pp = data[3]
+    budget_percent = data[7]
     day_mask = data[9]
     active_days = [C.DAY_LABELS[i] for i in range(7) if day_mask & (1 << i)]
     enabled = bool(data[10])
@@ -202,6 +208,7 @@ def decode_program_header(data: bytes) -> dict:
         date = f"{day:02d}/{month:02d}/{year:04d}"
     return {
         "program": C.PROGRAM_LETTER_FROM_TAG.get(pp, f"tag_0x{pp:02x}"),
+        "budget_percent": budget_percent,
         "day_mask": day_mask,
         "active_days": active_days,
         "enabled": enabled,

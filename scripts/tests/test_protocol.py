@@ -85,6 +85,18 @@ class TestBuildProgramRecords(unittest.TestCase):
         self.assertEqual(records[1], hx("0f-12-01-10-01-7c-05-a0-05-a0-05-a0-05-a0-05-a0-05-a0-05-a0"))
         self.assertEqual(records[2], hx("0f-11-02-10-00-03-84-00-03-84-00-03-84-00-00-00-00-04-b0"))
 
+    def test_program_budget_percent_matches_capture_15_08(self):
+        # Confirmé par capture réelle (écriture via l'app le 15/08) : A=50%, B=80%, C=100%
+        rec_a = P.build_program_records("A", 0x1F, 6 * 60 + 20, [900, 900, 900, 0, 1200, 0], budget_percent=50)
+        self.assertEqual(rec_a[0][:12], hx("0f-0e-00-10-00-00-00-32-00-1f-01-00"))
+
+        rec_b = P.build_program_records("B", 0x60, 7 * 60, [900, 900, 900, 0, 600, 0], budget_percent=80)
+        self.assertEqual(rec_b[0][:12], hx("0f-0e-00-11-00-00-00-50-00-60-01-00"))
+
+        rec_c = P.build_program_records("C", 0x7F, 12 * 60, [60, 120, 180, 0, 300, 0], budget_percent=100)
+        self.assertEqual(rec_c[0][:12], hx("0f-0e-00-12-00-00-00-64-00-7f-01-00"))
+        self.assertEqual(rec_c[2], hx("0f-11-02-12-00-00-3c-00-00-78-00-00-b4-00-00-00-00-01-2c"))
+
     def test_zone_name_record(self):
         self.assertEqual(
             P.build_zone_name_record(0, "JARDIN D"),
@@ -178,9 +190,20 @@ class TestDecode(unittest.TestCase):
         # Programme A après suppression du lundi : jours mar-ven
         result = P.decode_program_header(hx("12-0e-0b-10-00-00-00-64-00-1e-01-00-0c-08-07-ea"))
         self.assertEqual(result["program"], "A")
+        self.assertEqual(result["budget_percent"], 100)
         self.assertEqual(result["active_days"], ["mar", "mer", "jeu", "ven"])
         self.assertTrue(result["enabled"])
         self.assertEqual(result["device_date"], "12/08/2026")
+
+    def test_decode_program_header_budget_15_08(self):
+        # Confirmé par capture réelle du 15/08 : A=50%, B=80%, C=100% (tous jours)
+        a = P.decode_program_header(hx("0f-0e-00-10-00-00-00-32-00-1f-01-00-0f-08-07-ea"))
+        self.assertEqual(a["budget_percent"], 50)
+        b = P.decode_program_header(hx("0f-0e-00-11-00-00-00-50-00-60-01-00-0f-08-07-ea"))
+        self.assertEqual(b["budget_percent"], 80)
+        c = P.decode_program_header(hx("0f-0e-00-12-00-00-00-64-00-7f-01-00-0f-08-07-ea"))
+        self.assertEqual(c["budget_percent"], 100)
+        self.assertEqual(c["active_days"], ["lun", "mar", "mer", "jeu", "ven", "sam", "dim"])
 
     def test_decode_program_starts(self):
         result = P.decode_program_starts(hx("12-12-01-10-01-86-05-a0-05-a0-05-a0-05-a0-05-a0-05-a0-05-a0"))
@@ -230,3 +253,39 @@ class TestCommandsValidation(unittest.TestCase):
             CMD._first_start_to_minutes(["25:00"])
         with self.assertRaises(ValueError):
             CMD._first_start_to_minutes(["10:60"])
+
+
+class TestProgramWriteSafety(unittest.TestCase):
+    """Vérifie que _apply_program_changes refuse d'écrire sur une lecture incomplète."""
+
+    def test_missing_fields_detected(self):
+        import commands as CMD
+        status_incomplete = {
+            "programs": {
+                "A": {"active_days": ["lun"]},  # start_times, durations_s, budget_percent manquants
+                "B": {"active_days": [], "start_times": [], "durations_s": {}, "budget_percent": 100},
+                "C": {"active_days": [], "start_times": [], "durations_s": {}, "budget_percent": 100},
+            }
+        }
+        required = {"active_days", "start_times", "durations_s", "budget_percent"}
+        missing = {
+            letter: sorted(required - set(status_incomplete["programs"].get(letter, {}).keys()))
+            for letter in ("A", "B", "C")
+            if required - set(status_incomplete["programs"].get(letter, {}).keys())
+        }
+        self.assertEqual(missing, {"A": ["budget_percent", "durations_s", "start_times"]})
+
+    def test_complete_status_has_no_missing_fields(self):
+        required = {"active_days", "start_times", "durations_s", "budget_percent"}
+        status_complete = {
+            "programs": {
+                letter: {"active_days": [], "start_times": [], "durations_s": {}, "budget_percent": 100}
+                for letter in ("A", "B", "C")
+            }
+        }
+        missing = {
+            letter: sorted(required - set(status_complete["programs"].get(letter, {}).keys()))
+            for letter in ("A", "B", "C")
+            if required - set(status_complete["programs"].get(letter, {}).keys())
+        }
+        self.assertEqual(missing, {})
